@@ -21,5 +21,6 @@ from plaidapp import views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('plaid/', include('plaidapp.urls')),
-    path('', views.home, name='home')
+    path('', views.home, name='home'),
+    path('users/', include('users.urls')),
 ]
