@@ -1,4 +1,4 @@
-{% extends 'home/base.html' %}
+{% extends "home/base.html" %}
 {% block title %}Login{% endblock %}
 
 {% block content %}
@@ -6,6 +6,9 @@
 <form method="post">
     {% csrf_token %}
     {{ form.as_p }}
-    <button class="btn btn-primary" type="submit">Log in</button>
+    <button type="submit" class="btn btn-primary">Login</button>
 </form>
+
+<p><a href="{% url 'password_reset' %}">Forgot your password?</a></p>
+<p><a href="{% url 'forgot_username' %}">Forgot your username?</a></p>
 {% endblock %}
