@@ -1,13 +1,11 @@
 <!-- home/templates/home/home.html -->
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home Page</title>
-</head>
-<body>
-    <h1>Welcome to the Investment Tracker!</h1>
-    <p>Track your investments and manage your portfolio.</p>
-</body>
-</html>
+<!-- home/templates/home/home.html -->
+{% extends 'home/base.html' %}
+
+{% block title %}Home - Investment Tracker{% endblock %}
+
+{% block content %}
+    <h1>Welcome to your Investment Tracker</h1>
+    <p>Link your accounts, track your trades, and more.</p>
+{% endblock %}
+

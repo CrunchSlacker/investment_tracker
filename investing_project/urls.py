@@ -7,6 +7,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('plaid/', include('plaidapp.urls')),
     path('', include('home.urls')),
-    path('accounts/', include('django.contrib.auth.urls')),  # Built-in auth URLs
+    path('accounts/', include('accounts.urls')),
 ]
 
