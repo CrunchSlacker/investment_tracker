@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Link Your Investment Account</title>
+    <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
+</head>
+<body>
+    <h1>Welcome to Your Investment Tracker!</h1>
+    <button id="link-button">Link Your Account</button>
+
+    <script>
+        async function getLinkToken() {
+            const response = await fetch('/plaid/create_link_token/');
+            const data = await response.json();
+            return data.link_token;
+        }
+
+        async function exchangePublicToken(public_token) {
+            const csrfToken = "{{ csrf_token }}"; // only works if using Django template
+
+            await fetch('/plaid/exchange_public_token/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrfToken
+                },
+                body: `public_token=${public_token}`
+            });
+
+            alert("Account successfully linked!");
+        }
+
+        document.getElementById('link-button').onclick = async function () {
+            const linkToken = await getLinkToken();
+
+            const handler = Plaid.create({
+                token: linkToken,
+                onSuccess: function(public_token, metadata) {
+                    exchangePublicToken(public_token);
+                },
+                onExit: function(err, metadata) {
+                    console.error("User exited Plaid Link", err, metadata);
+                }
+            });
+
+            handler.open();
+        };
+    </script>
+</body>
+</html>

@@ -1,65 +1,166 @@
-import os
-import json
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.shortcuts import render
-from django.conf import settings
+# import os
+# import json
+# from django.http import JsonResponse
+# from django.views.decorators.csrf import csrf_exempt
+# from django.shortcuts import render
+# from django.conf import settings
 
+# from plaid.api import plaid_api
+# from plaid.model.link_token_create_request import LinkTokenCreateRequest
+# from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUser
+# from plaid.model.item_public_token_exchange_request import (
+#     ItemPublicTokenExchangeRequest,
+# )
+# from plaid.model.country_code import CountryCode
+# from plaid.model.products import Products
+# from plaid import Configuration, ApiClient, Environment
+
+# # Map environment string to Plaid enum
+# env = {"sandbox": Environment.Sandbox, "production": Environment.Production}
+# plaid_env = env[settings.PLAID_ENV]
+
+# # Set up Plaid configuration and client
+# configuration = Configuration(
+#     host=plaid_env,
+#     api_key={
+#         "clientId": settings.PLAID_CLIENT_ID,
+#         "secret": settings.PLAID_SECRET,
+#     },
+# )
+# api_client = ApiClient(configuration)
+# client = plaid_api.PlaidApi(api_client)
+
+
+# def home(request):
+#     return render(request, "plaidapp/index.html")
+
+
+# def create_link_token(request):
+#     user_id = str(request.user.id) if request.user.is_authenticated else "anonymous"
+
+#     request_body = LinkTokenCreateRequest(
+#         user=LinkTokenCreateRequestUser(client_user_id=user_id),
+#         client_name="PartnerTrade",
+#         products=[Products("transactions")],
+#         country_codes=[CountryCode("US")],
+#         language="en",
+#     )
+
+#     response = client.link_token_create(request_body)
+#     print(response)
+#     return JsonResponse(response.to_dict())
+
+
+# @csrf_exempt
+# def exchange_public_token(request):
+#     data = json.loads(request.body)
+#     public_token = data.get("public_token")
+
+#     exchange_request = ItemPublicTokenExchangeRequest(public_token=public_token)
+#     exchange_response = client.item_public_token_exchange(exchange_request)
+
+#     access_token = exchange_response["access_token"]
+
+#     # Save this token in your DB securely for later use (not shown here)
+#     return JsonResponse({"access_token": access_token})
+from dotenv import load_dotenv
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
 from plaid.api import plaid_api
 from plaid.model.link_token_create_request import LinkTokenCreateRequest
 from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUser
-from plaid.model.item_public_token_exchange_request import (
-    ItemPublicTokenExchangeRequest,
-)
-from plaid.model.country_code import CountryCode
 from plaid.model.products import Products
-from plaid import Configuration, ApiClient, Environment
+from plaid.model.country_code import CountryCode
+from plaid.model.item_public_token_exchange_request import ItemPublicTokenExchangeRequest
+from plaid.configuration import Configuration
+from plaid.api_client import ApiClient
+from plaid.model.item_public_token_exchange_response import ItemPublicTokenExchangeResponse
+from .models import PlaidAccount
+from django.shortcuts import render
+from django.http import HttpResponse
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth import login
+from django.shortcuts import render, redirect
 
-# Map environment string to Plaid enum
-env = {"sandbox": Environment.Sandbox, "production": Environment.Production}
-plaid_env = env[settings.PLAID_ENV]
-
-# Set up Plaid configuration and client
-configuration = Configuration(
-    host=plaid_env,
-    api_key={
-        "clientId": settings.PLAID_CLIENT_ID,
-        "secret": settings.PLAID_SECRET,
-    },
-)
-api_client = ApiClient(configuration)
-client = plaid_api.PlaidApi(api_client)
-
+# Load environment variables
+load_dotenv()
 
 def home(request):
-    return render(request, "plaidapp/index.html")
+    return HttpResponse("<h1>Welcome to the Investment Tracker</h1><a href='/plaid/link/'>Link Your Account</a>")
+
+@login_required
+def link_account_page(request):
+    return render(request, 'plaidapp/link_account.html')
+
+def signup_view(request):
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)  # log them in automatically
+            return redirect('link_account_page')  # go to Plaid flow or dashboard
+    else:
+        form = UserCreationForm()
+    return render(request, 'registration/signup.html', {'form': form})
+
+# Set up Plaid configuration
+PLAID_ENV = os.getenv("PLAID_ENV", "sandbox").lower()
+PLAID_HOST = {
+    "sandbox": "https://sandbox.plaid.com",
+    "development": "https://development.plaid.com",
+    "production": "https://production.plaid.com"
+}[PLAID_ENV]
+
+configuration = Configuration(
+    host=PLAID_HOST,
+    api_key={
+        "clientId": os.getenv("PLAID_CLIENT_ID"),
+        "secret": os.getenv("PLAID_SECRET"),
+    }
+)
+
+api_client = ApiClient(configuration)
+plaid_client = plaid_api.PlaidApi(api_client)
 
 
+# ----------- Create Link Token -----------
+@login_required
 def create_link_token(request):
-    user_id = str(request.user.id) if request.user.is_authenticated else "anonymous"
-
-    request_body = LinkTokenCreateRequest(
-        user=LinkTokenCreateRequestUser(client_user_id=user_id),
-        client_name="PartnerTrade",
-        products=[Products("transactions")],
+    user = request.user
+    request_data = LinkTokenCreateRequest(
+        user=LinkTokenCreateRequestUser(client_user_id=str(user.id)),
+        client_name="Investment Tracker",
+        products=[Products.INVESTMENTS],
         country_codes=[CountryCode("US")],
-        language="en",
+        language="en"
     )
-
-    response = client.link_token_create(request_body)
-    print(response)
-    return JsonResponse(response.to_dict())
+    response = plaid_client.link_token_create(request_data)
+    return JsonResponse({'link_token': response['link_token']})
 
 
+# ----------- Exchange Public Token -----------
 @csrf_exempt
+@login_required
+@require_http_methods(["POST"])
 def exchange_public_token(request):
-    data = json.loads(request.body)
-    public_token = data.get("public_token")
+    public_token = request.POST.get("public_token")
+
+    if not public_token:
+        return JsonResponse({'error': 'Missing public_token'}, status=400)
 
     exchange_request = ItemPublicTokenExchangeRequest(public_token=public_token)
-    exchange_response = client.item_public_token_exchange(exchange_request)
+    exchange_response: ItemPublicTokenExchangeResponse = plaid_client.item_public_token_exchange(exchange_request)
 
-    access_token = exchange_response["access_token"]
+    access_token = exchange_response.access_token
+    item_id = exchange_response.item_id
 
-    # Save this token in your DB securely for later use (not shown here)
-    return JsonResponse({"access_token": access_token})
+    # Save to DB
+    PlaidAccount.objects.create(
+        user=request.user,
+        access_token=access_token,
+        item_id=item_id
+    )
+
+    return JsonResponse({'status': 'linked', 'item_id': item_id})
