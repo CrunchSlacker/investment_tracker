@@ -10,6 +10,5 @@ urlpatterns = [
     path('plaid/', include('plaidapp.urls')),
     path('', home, name='home'),
     path('accounts/', include('accounts.urls')),
-    path('dashboard/', include('dashboard.urls')),
 ]
 
