@@ -1,0 +1,18 @@
+{% extends 'home/base.html' %}
+{% block title %}Forgot Username{% endblock %}
+
+{% block content %}
+<h2>Forgot your username?</h2>
+<p>Enter your email and we'll send your username to you.</p>
+<form method="post">
+    {% csrf_token %}
+    <input type="email" name="email" class="form-control" placeholder="Enter your email" required>
+    <br>
+    <button type="submit" class="btn btn-primary">Send username</button>
+</form>
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+{% endif %}
+{% endblock %}
