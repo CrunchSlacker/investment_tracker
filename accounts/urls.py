@@ -1,11 +1,12 @@
 # accounts/urls.py
 from django.urls import path
 from . import views
-from django.contrib.auth import views as auth_views
+from django.contrib.auth import views as auth_views, logout
 
 urlpatterns = [
     path('login/', auth_views.LoginView.as_view(template_name='accounts/login.html'), name='login'),
     path('signup/', views.signup_view, name='signup'),
+    path('logout/', views.custom_logout_view, name='logout'),
     path('password_reset/', auth_views.PasswordResetView.as_view(
         template_name='accounts/password_reset_form.html'), name='password_reset'),
     path('password_reset/done/', auth_views.PasswordResetDoneView.as_view(

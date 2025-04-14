@@ -1,4 +1,5 @@
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth import logout
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.models import User
 from django.contrib.auth import login, logout
 from django.core.mail import send_mail
@@ -7,15 +8,9 @@ from django.shortcuts import render, redirect
 from accounts.forms import CustomUserCreationForm
 
 
-def signup(request):
-    if request.method == 'POST':
-        form = UserCreationForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('login')
-    else:
-        form = UserCreationForm()
-    return render(request, 'accounts/signup.html', {'form': form})
+def custom_logout_view(request):
+    logout(request)
+    return redirect('home')
 
 def forgot_username(request):
     if request.method == 'POST':
@@ -46,7 +41,18 @@ def signup_view(request):
         form = CustomUserCreationForm()
     return render(request, 'accounts/signup.html', {'form': form})
 
+def login_view(request):
+    login_form = AuthenticationForm()
+    if request.method == 'POST':
+        form = AuthenticationForm(data=request.POST)
+        if form.is_valid():
+            username = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password')
+
+    return redirect('dashboard')
+  
 def logout_view(request):
     logout(request)
     messages.success(request, "You have been logged out.")
     return redirect('home')
+
