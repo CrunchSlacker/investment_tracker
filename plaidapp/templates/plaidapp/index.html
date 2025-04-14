@@ -1,0 +1,13 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Plaid Link</title>
+    <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
+    <script src="{% static 'plaidapp/create_link_token.js' %}"></script>
+</head>
+<body>
+    <h1>Link Your Account</h1>
+    <button id="link-button">Link Account</button>
+</body>
+</html>

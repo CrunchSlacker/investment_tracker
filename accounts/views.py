@@ -1,10 +1,10 @@
 from django.contrib.auth import logout
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.models import User
+from django.contrib.auth import login, logout
 from django.core.mail import send_mail
 from django.contrib import messages
 from django.shortcuts import render, redirect
-
 from accounts.forms import CustomUserCreationForm
 
 
@@ -50,3 +50,9 @@ def login_view(request):
             password = form.cleaned_data.get('password')
 
     return redirect('dashboard')
+  
+def logout_view(request):
+    logout(request)
+    messages.success(request, "You have been logged out.")
+    return redirect('home')
+
