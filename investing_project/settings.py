@@ -35,6 +35,8 @@ load_dotenv()
 PLAID_CLIENT_ID = os.getenv('PLAID_CLIENT_ID')
 PLAID_SECRET = os.getenv('PLAID_SECRET')
 PLAID_ENV = os.getenv('PLAID_ENV')
+LOGIN_REDIRECT_URL = '/dashboard/'
+LOGOUT_REDIRECT_URL = '/'
 
 # Application definition
 
@@ -48,6 +50,7 @@ INSTALLED_APPS = [
     'plaidapp',
     'home',
     'accounts',
+    'dashboard'
 ]
 
 MIDDLEWARE = [

@@ -1,11 +1,32 @@
-<!-- home/templates/home/home.html -->
-<!-- home/templates/home/home.html -->
-{% extends 'home/base.html' %}
-
-{% block title %}Home - Investment Tracker{% endblock %}
+{% extends "home/base.html" %}
+{% load static %}
+{% block title %}Home{% endblock %}
 
 {% block content %}
-    <h1>Welcome to your Investment Tracker</h1>
-    <p>Link your accounts, track your trades, and more.</p>
-{% endblock %}
+<div class="text-center">
+  <h1 class="display-4 mb-4">Welcome to Investment Tracker</h1>
+  <p class="lead mb-4">Track all your trades and gains in one secure place.</p>
+  <a href="{% url 'signup' %}" class="btn btn-success btn-lg mb-4">Get Started</a>
+</div>
 
+<div class="text-center mb-5">
+  <img src="{% static 'images/stocks.jpg' %}" class="img-fluid rounded" alt="Stock image" style="max-height: 400px;">
+</div>
+
+<hr>
+
+<section class="mt-5">
+  <h2>📈 About This App</h2>
+  <p>
+    Investment Tracker is built for retail investors who want a better way to manage their portfolios.
+    With account linking, real-time updates, and performance insights, you can finally ditch the spreadsheets
+    and keep your focus on making smarter trades.
+  </p>
+  <ul>
+    <li>🔒 Secure account integration with Plaid</li>
+    <li>📊 Real-time updates and trade tracking</li>
+    <li>💼 Capital gains breakdowns for tax season</li>
+    <li>📱 Accessible on all devices</li>
+  </ul>
+</section>
+{% endblock %}
