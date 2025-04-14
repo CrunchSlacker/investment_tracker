@@ -1,11 +1,20 @@
-<!-- home/templates/home/home.html -->
-<!-- home/templates/home/home.html -->
-{% extends 'home/base.html' %}
+{% load static %}
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Welcome to PartnerTrade</title>
+  </head>
+  <body>
+    <h1>Welcome to PartnerTrade</h1>
 
-{% block title %}Home - Investment Tracker{% endblock %}
+    {% if user.is_authenticated %}
+        <p>Hello, {{ user.username }}!</p>
+        <a href="{% url 'logout' %}">Logout</a>
 
-{% block content %}
-    <h1>Welcome to your Investment Tracker</h1>
-    <p>Link your accounts, track your trades, and more.</p>
-{% endblock %}
+    {% else %}
+        <a href="{% url 'signup' %}">Sign Up</a>
+        <a href="{% url 'login' %}">Log In</a>
+    {% endif %}
 
+  </body>
+</html>

@@ -46,7 +46,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'plaidapp',
-    'users',
     'home',
     'accounts',
 ]
