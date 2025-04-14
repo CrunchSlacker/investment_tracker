@@ -14,6 +14,22 @@ import os
 # from plaid.model.country_code import CountryCode
 # from plaid.model.products import Products
 # from plaid import Configuration, ApiClient, Environment
+=======
+import json
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.shortcuts import render
+from django.conf import settings
+
+from plaid.api import plaid_api
+from plaid.model.link_token_create_request import LinkTokenCreateRequest
+from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUser
+from plaid.model.item_public_token_exchange_request import (
+    ItemPublicTokenExchangeRequest,
+)
+from plaid.model.country_code import CountryCode
+from plaid.model.products import Products
+from plaid import Configuration, ApiClient, Environment
 
 # # Map environment string to Plaid enum
 # env = {"sandbox": Environment.Sandbox, "production": Environment.Production}
@@ -88,7 +104,7 @@ from django.shortcuts import render, redirect
 load_dotenv()
 
 def home(request):
-    return HttpResponse("<h1>Welcome to the Investment Tracker</h1><a href='/plaid/link/'>Link Your Account</a>")
+    return render(request, "plaidapp/index.html")
 
 @login_required
 def link_account_page(request):
@@ -127,18 +143,31 @@ plaid_client = plaid_api.PlaidApi(api_client)
 
 # ----------- Create Link Token -----------
 @login_required
+# def create_link_token(request):
+#     user = request.user
+#     request_data = LinkTokenCreateRequest(
+#         user=LinkTokenCreateRequestUser(client_user_id=str(user.id)),
+#         client_name="Investment Tracker",
+#         products=[Products.INVESTMENTS],
+#         country_codes=[CountryCode("US")],
+#         language="en"
+#     )
+#     response = plaid_client.link_token_create(request_data)
+#     return JsonResponse({'link_token': response['link_token']})
 def create_link_token(request):
-    user = request.user
-    request_data = LinkTokenCreateRequest(
-        user=LinkTokenCreateRequestUser(client_user_id=str(user.id)),
-        client_name="Investment Tracker",
-        products=[Products.INVESTMENTS],
-        country_codes=[CountryCode("US")],
-        language="en"
-    )
-    response = plaid_client.link_token_create(request_data)
-    return JsonResponse({'link_token': response['link_token']})
+    user_id = str(request.user.id) if request.user.is_authenticated else "anonymous"
 
+    request_body = LinkTokenCreateRequest(
+        user=LinkTokenCreateRequestUser(client_user_id=user_id),
+        client_name="PartnerTrade",
+        products=[Products("transactions")],
+        country_codes=[CountryCode("US")],
+        language="en",
+    )
+
+    response = plaid_client.link_token_create(request_body)
+    print(response)
+    return JsonResponse(response.to_dict())
 
 # ----------- Exchange Public Token -----------
 @csrf_exempt
