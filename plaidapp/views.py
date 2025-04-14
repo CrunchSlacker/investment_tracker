@@ -14,7 +14,6 @@ import os
 # from plaid.model.country_code import CountryCode
 # from plaid.model.products import Products
 # from plaid import Configuration, ApiClient, Environment
-=======
 import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -103,7 +102,7 @@ from django.shortcuts import render, redirect
 # Load environment variables
 load_dotenv()
 
-def home(request):
+def plaid_home(request):
     return render(request, "plaidapp/index.html")
 
 @login_required
