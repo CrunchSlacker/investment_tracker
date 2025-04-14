@@ -16,6 +16,9 @@ from plaid.model.item_public_token_exchange_response import ItemPublicTokenExcha
 from .models import PlaidAccount
 from django.shortcuts import render
 from django.http import HttpResponse
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth import login
+from django.shortcuts import render, redirect
 
 # Load environment variables
 load_dotenv()
@@ -26,6 +29,17 @@ def home(request):
 @login_required
 def link_account_page(request):
     return render(request, 'plaidapp/link_account.html')
+
+def signup_view(request):
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)  # log them in automatically
+            return redirect('link_account_page')  # go to Plaid flow or dashboard
+    else:
+        form = UserCreationForm()
+    return render(request, 'registration/signup.html', {'form': form})
 
 # Set up Plaid configuration
 PLAID_ENV = os.getenv("PLAID_ENV", "sandbox").lower()

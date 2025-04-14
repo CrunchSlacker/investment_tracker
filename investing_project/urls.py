@@ -9,4 +9,6 @@ urlpatterns = [
     path('plaid/', include('plaidapp.urls')),
     path('accounts/', include('django.contrib.auth.urls')),
     path('', home),
+    path('accounts/', include('django.contrib.auth.urls')),
+
 ]
