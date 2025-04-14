@@ -1,26 +1,57 @@
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== "") {
+    const cookies = document.cookie.split(";");
+    for (let cookie of cookies) {
+      cookie = cookie.trim();
+      if (cookie.startsWith(name + "=")) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+
 fetch("/plaid/create_link_token/")
   .then((res) => res.json())
   .then((data) => {
     const handler = Plaid.create({
       token: data.link_token,
       onSuccess: function (public_token, metadata) {
+        console.log("Plaid Link Success, got public_token:", public_token);
+
         fetch("/plaid/exchange_public_token/", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "X-CSRFToken": "{{ csrf_token }}",
+            "X-CSRFToken": getCookie("csrftoken"),
           },
           body: JSON.stringify({ public_token: public_token }),
         })
           .then((res) => res.json())
-          .then(console.log);
+          .then((data) => {
+            console.log("Exchange response:", data);
+            window.location.reload(true);
+          })
+          .catch((err) => {
+            console.error("Exchange error:", err);
+          });
       },
       onExit: function (err, metadata) {
-        console.log(err, metadata);
+        console.warn("User exited Plaid Link:", err, metadata);
       },
     });
 
-    document.getElementById("link-button").onclick = function () {
-      handler.open();
-    };
+    const button = document.getElementById("link-button");
+    if (button) {
+      button.addEventListener("click", () => {
+        handler.open();
+      });
+    } else {
+      console.error("No #link-button found on page.");
+    }
+  })
+  .catch((err) => {
+    console.error("Failed to create link token:", err);
   });

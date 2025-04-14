@@ -1,12 +1,32 @@
-{% extends "home/base.html" %}
-{% load static %}
+{% extends "home/base.html" %} {% load static %} {% block title %}Plaid
+Dashboard{% endblock %} {% block content %}
+<div class="container mt-5 text-center">
+  <h1>Plaid Dashboard</h1>
 
-{% block title %}Plaid Dashboard{% endblock %}
+  {% if has_accounts %}
+  <p>✅ You have linked the following accounts:</p>
+  <ul class="list-group mb-4">
+    {% for account in accounts %}
+      <li class="list-group-item">
+        <strong>Item ID:</strong> {{ account.item_id }}<br />
+        <strong>Access Token:</strong> {{ account.access_token }}<br />
+        <form action="{% url 'delete_account' account.id %}" method="post" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger btn-sm mt-2">Delete</button>
+        </form>
+      </li>
+    {% endfor %}
+  </ul>
+  
+  </ul>
+  <button id="link-button" class="btn btn-warning">Link More Accounts</button>
+  {% else %}
+  <p>No accounts linked yet.</p>
+  <button id="link-button" class="btn btn-success">Link an Account</button>
+  {% endif %}
 
-{% block content %}
-  <h1>Link Your Account</h1>
-  <button id="link-button">Link Account</button>
-
+  <!-- Include Plaid Link Scripts -->
   <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
   <script src="{% static 'plaidapp/create_link_token.js' %}"></script>
+</div>
 {% endblock %}

@@ -1,3 +1,6 @@
 from django.contrib import admin
+from .models import PlaidAccount
 
-# Register your models here.
+@admin.register(PlaidAccount)
+class PlaidAccountAdmin(admin.ModelAdmin):
+    list_display = ('user', 'item_id', 'access_token')
