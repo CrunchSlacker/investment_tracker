@@ -5,21 +5,62 @@ Dashboard{% endblock %} {% block content %}
 
   {% if has_accounts %}
   <p>✅ You have linked the following accounts:</p>
-  <ul class="list-group mb-4">
-    {% for account in accounts %}
-      <li class="list-group-item">
-        <strong>Item ID:</strong> {{ account.item_id }}<br />
-        <strong>Access Token:</strong> {{ account.access_token }}<br />
-        <form action="{% url 'delete_account' account.id %}" method="post" style="display:inline;">
-          {% csrf_token %}
-          <button type="submit" class="btn btn-danger btn-sm mt-2">Delete</button>
-        </form>
-      </li>
-    {% endfor %}
-  </ul>
-  
-  </ul>
-  <button id="link-button" class="btn btn-warning">Link More Accounts</button>
+  {% for institution in linked_data %}
+  <div class="card mb-4">
+    <div class="card-header">
+      <h4>{{ institution.institution_name }}</h4>
+    </div>
+    <div class="card-body">
+      <p>
+        <strong>Total Investment Value:</strong>
+        ${{ institution.total_value|floatformat:2 }}
+      </p>
+
+      {% if institution.investment_accounts or institution.holdings %}
+
+        {% if institution.holdings %}
+            <ul class="list-group mt-2">
+            {% for holding in institution.holdings %}
+            <li class="list-group-item text-start">
+                {{ holding.name }} ({{ holding.ticker }}) – {{ holding.quantity }}
+                shares × ${{ holding.price|floatformat:2 }} =
+                <strong>${{ holding.value|floatformat:2 }}</strong>
+            </li>
+            {% endfor %}
+            </ul>
+        {% else %}
+            <p>No holdings found.</p>
+        {% endif %}
+
+        {% if institution.investment_accounts %}
+            <ul class="list-group">
+            {% for acct in institution.investment_accounts %}
+            <li class="list-group-item">
+                <strong>{{ acct.name }}</strong> ({{ acct.subtype }})
+            </li>
+            {% endfor %}
+            </ul>
+        {% endif %}
+
+        {% else %}
+        <p>No investment accounts linked for this institution.</p>
+        {% endif %}
+
+    </div>
+  </div>
+
+  <form
+    method="POST"
+    action="{% url 'delete_account' account_id=institution.account_id %}"
+  >
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger btn-sm mt-2">Delete</button>
+  </form>
+  {% endfor %}
+
+  <div class="mt-4">
+    <button id="link-button" class="btn btn-warning">Link More Accounts</button>
+  </div>
   {% else %}
   <p>No accounts linked yet.</p>
   <button id="link-button" class="btn btn-success">Link an Account</button>

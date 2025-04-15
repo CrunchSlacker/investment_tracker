@@ -20,6 +20,7 @@ fetch("/plaid/create_link_token/")
       token: data.link_token,
       onSuccess: function (public_token, metadata) {
         console.log("Plaid Link Success, got public_token:", public_token);
+        const institution_id = metadata.institution?.institution_id || null;
 
         fetch("/plaid/exchange_public_token/", {
           method: "POST",
@@ -27,7 +28,10 @@ fetch("/plaid/create_link_token/")
             "Content-Type": "application/json",
             "X-CSRFToken": getCookie("csrftoken"),
           },
-          body: JSON.stringify({ public_token: public_token }),
+          body: JSON.stringify({
+            public_token: public_token,
+            institution_id: institution_id,
+          }),
         })
           .then((res) => res.json())
           .then((data) => {
@@ -38,6 +42,7 @@ fetch("/plaid/create_link_token/")
             console.error("Exchange error:", err);
           });
       },
+
       onExit: function (err, metadata) {
         console.warn("User exited Plaid Link:", err, metadata);
       },

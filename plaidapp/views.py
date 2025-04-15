@@ -24,6 +24,13 @@ from plaid.model.item_public_token_exchange_response import (
 )
 from plaid.configuration import Configuration
 from plaid.api_client import ApiClient
+from plaid.model.accounts_get_request import AccountsGetRequest
+from plaid.model.accounts_get_response import AccountsGetResponse
+from plaid.model.institutions_get_by_id_request import InstitutionsGetByIdRequest
+from plaid.model.investments_holdings_get_request import InvestmentsHoldingsGetRequest
+from plaid.model.investments_holdings_get_response import InvestmentsHoldingsGetResponse
+from plaid.model.investments_holdings_get_request import InvestmentsHoldingsGetRequest
+
 
 from .models import PlaidAccount
 
@@ -48,14 +55,127 @@ api_client = ApiClient(configuration)
 plaid_client = plaid_api.PlaidApi(api_client)
 
 
+def get_investment_accounts(access_token):
+    request = AccountsGetRequest(access_token=access_token)
+    response: AccountsGetResponse = plaid_client.accounts_get(request)
+
+    # Filter only investment accounts
+    accounts = [
+        {
+            "name": acct.name,
+            "subtype": acct.subtype.value,
+            "balance": acct.balances.current,
+        }
+        for acct in response.accounts
+        if acct.type.value == "investment"
+    ]
+
+    return accounts
+
+
+def get_investment_total_value(access_token):
+    try:
+        holdings_request = InvestmentsHoldingsGetRequest(access_token=access_token)
+        holdings_response: InvestmentsHoldingsGetResponse = (
+            plaid_client.investments_holdings_get(holdings_request)
+        )
+
+        # Map security_id to price
+        security_prices = {
+            sec.security_id: sec.close_price or 0
+            for sec in holdings_response.securities
+        }
+
+        total_value = 0.0
+        for holding in holdings_response.holdings:
+            price = security_prices.get(holding.security_id, 0)
+            total_value += (holding.quantity or 0) * price
+
+        return round(total_value, 2)
+
+    except Exception as e:
+        print(f"Error fetching holdings: {e}")
+        return 0.0
+
+
+def get_holdings_summary(access_token):
+    try:
+        request = InvestmentsHoldingsGetRequest(access_token=access_token)
+        response = plaid_client.investments_holdings_get(request)
+
+        security_map = {
+            sec.security_id: {
+                "name": sec.name,
+                "ticker": sec.ticker_symbol,
+                "price": sec.close_price or 0,
+            }
+            for sec in response.securities
+        }
+
+        total_value = 0
+        holding_details = []
+
+        for holding in response.holdings:
+            sec_info = security_map.get(holding.security_id, {})
+            quantity = holding.quantity or 0
+            price = sec_info.get("price", 0)
+            value = quantity * price
+
+            total_value += value
+
+            holding_details.append(
+                {
+                    "name": sec_info.get("name", "Unknown"),
+                    "ticker": sec_info.get("ticker", ""),
+                    "quantity": quantity,
+                    "price": price,
+                    "value": value,
+                }
+            )
+
+        return round(total_value, 2), holding_details
+
+    except Exception as e:
+        print(f"Error fetching holdings: {e}")
+        return 0, []
+
+
+##########################################################################
+
+
 @login_required
 def plaid_home(request):
     accounts = PlaidAccount.objects.filter(user=request.user)
+    linked_data = []
+
+    for acc in accounts:
+        institution_name = "Unknown Institution"
+        if acc.institution_id:
+            try:
+                inst_request = InstitutionsGetByIdRequest(
+                    institution_id=acc.institution_id, country_codes=["US"]
+                )
+                inst_response = plaid_client.institutions_get_by_id(inst_request)
+                institution_name = inst_response.institution.name
+            except Exception as e:
+                print(f"Error fetching institution name: {e}")
+
+        total_value, holdings = get_holdings_summary(acc.access_token)
+
+        linked_data.append(
+            {
+                "institution_name": institution_name,
+                "total_value": total_value,
+                "holdings": holdings,
+                "account_id": acc.id,
+            }
+        )
 
     context = {
-        'accounts': accounts,
-        'has_accounts': accounts.exists(),
+        "linked_data": linked_data,
+        "has_accounts": len(linked_data) > 0,
     }
+
     return render(request, "plaidapp/index.html", context)
 
 
@@ -82,7 +202,7 @@ def create_link_token(request):
     request_body = LinkTokenCreateRequest(
         user=LinkTokenCreateRequestUser(client_user_id=user_id),
         client_name="PartnerTrade",
-        products=[Products("transactions")],
+        products=[Products("investments")],
         country_codes=[CountryCode("US")],
         language="en",
     )
@@ -97,12 +217,13 @@ def create_link_token(request):
 def exchange_public_token(request):
     data = json.loads(request.body)
     public_token = data.get("public_token")
+    institution_id = data.get("institution_id")
 
     if not public_token:
-        return JsonResponse({'error': 'Missing public_token'}, status=400)
+        return JsonResponse({"error": "Missing public_token"}, status=400)
 
     exchange_request = ItemPublicTokenExchangeRequest(public_token=public_token)
-    exchange_response: ItemPublicTokenExchangeResponse = plaid_client.item_public_token_exchange(exchange_request)
+    exchange_response = plaid_client.item_public_token_exchange(exchange_request)
 
     access_token = exchange_response.access_token
     item_id = exchange_response.item_id
@@ -110,13 +231,15 @@ def exchange_public_token(request):
     PlaidAccount.objects.create(
         user=request.user,
         access_token=access_token,
-        item_id=item_id
+        item_id=item_id,
+        institution_id=institution_id,
     )
 
-    return JsonResponse({'status': 'linked', 'item_id': item_id})
+    return JsonResponse({"status": "linked", "item_id": item_id})
+
 
 @login_required
 def delete_account(request, account_id):
     account = get_object_or_404(PlaidAccount, id=account_id, user=request.user)
     account.delete()
-    return redirect('plaid_home')
+    return redirect("plaid_home")
