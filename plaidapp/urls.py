@@ -9,4 +9,6 @@ urlpatterns = [
     path('link/', views.link_account_page, name='link_account_page'),
     path('signup/', signup_view, name='signup'),
     path('delete/<int:account_id>/', views.delete_account, name='delete_account'),
+    path('coinbase/', views.coinbase_transactions, name='coinbase_transactions'),
+
 ]

@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+  <h2>Coinbase Transactions</h2>
+  <ul>
+    {% for tx in transactions %}
+      <li>
+        <strong>{{ tx.account_name }}</strong> | {{ tx.type }} | {{ tx.amount }} {{ tx.currency }} ({{ tx.date }}) - {{ tx.description }}
+      </li>
+    {% endfor %}
+  </ul>
+{% endblock %}

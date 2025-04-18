@@ -31,10 +31,15 @@ from plaid.model.investments_holdings_get_request import InvestmentsHoldingsGetR
 from plaid.model.investments_holdings_get_response import InvestmentsHoldingsGetResponse
 from plaid.model.investments_holdings_get_request import InvestmentsHoldingsGetRequest
 
-
 from .models import PlaidAccount
 
 load_dotenv()
+
+COINBASE_API_KEY = os.getenv("COINBASE_API_KEY")
+COINBASE_API_SECRET = os.getenv("COINBASE_API_SECRET")
+
+from coinbase.wallet.client import Client as CoinbaseClient
+coinbase_client = CoinbaseClient(COINBASE_API_KEY, COINBASE_API_SECRET)
 
 PLAID_ENV = os.getenv("PLAID_ENV", "sandbox").lower()
 PLAID_HOST = {
@@ -177,6 +182,32 @@ def plaid_home(request):
     }
 
     return render(request, "plaidapp/index.html", context)
+
+@login_required
+def coinbase_transactions(request):
+    try:
+        accounts = coinbase_client.get_accounts()
+        all_txs = []
+
+        for acct in accounts.data:
+            txs = coinbase_client.get_transactions(acct.id)
+            for tx in txs.data:
+                all_txs.append({
+                    "account_name": acct.name,
+                    "type": tx.type,
+                    "amount": tx.amount.amount,
+                    "currency": tx.amount.currency,
+                    "native_amount": tx.native_amount.amount,
+                    "date": tx.created_at,
+                    "status": tx.status,
+                    "description": tx.details.get('title', '')
+                })
+
+        return render(request, "plaidapp/coinbase.html", {"transactions": all_txs})
+
+    except Exception as e:
+        print(f"Coinbase error: {e}")
+        return JsonResponse({"error": "Failed to load Coinbase transactions"})
 
 
 @login_required
